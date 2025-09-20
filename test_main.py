@@ -58,16 +58,14 @@ def send_to_telegram(df: pd.DataFrame, message: str) -> None:
     """Send ranked data as formatted text to Telegram with debug."""
     header = "Ticker     Premarket %   Sentiment   History Score   Composite"
     lines = [header]
-    lines.append("\\-" * len(header))  # Escaped separator line
+    lines.append("-" * len(header))  # Separator line
     for _, row in df.iterrows():
         line = f"{row['Ticker']:<10}{row['Premarket %']:>13}{row['Sentiment']:>11}{row['History Score']:>15}{row['Composite']:>11}"
         lines.append(line)
     table_text = "\n".join(lines)
-    # Escape curly braces and other special chars in message
-    escaped_message = message.replace("{", "\{").replace("}", "\}")
-    full_msg = f"**{escaped_message}**\n\n```\n{table_text}\n```"
+    full_msg = f"*{message}*\n\n{table_text}"
     url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
-    payload = {'chat_id': TELEGRAM_CHAT_ID, 'text': full_msg, 'parse_mode': 'MarkdownV2'}
+    payload = {'chat_id': TELEGRAM_CHAT_ID, 'text': full_msg, 'parse_mode': 'Markdown'}
     response = requests.post(url, json=payload)
     print(f"Telegram API Status: {response.status_code}")
     print(f"Response: {response.text}")  # Logs the JSON response
