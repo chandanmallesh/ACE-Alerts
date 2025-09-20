@@ -7,6 +7,18 @@ from datetime import datetime, timedelta
 import re
 import os
 from typing import List, Dict
+import time
+# In fetch_latest_post
+for attempt in range(3):  # Retry 3 times
+    try:
+        tweets = twitter_client.search_recent_tweets(query=query, max_results=1, tweet_fields=['created_at'])
+        return tweets.data[0].text
+    except tweepy.TooManyRequests:
+        time.sleep(60 * (attempt + 1))  # Wait 1, 2, 3 mins
+        continue
+    except Exception as e:
+        raise e
+raise ValueError("Rate limit exceeded after retries.")
 
 # Config (from env/GitHub secrets)
 TWITTER_BEARER = os.getenv('TWITTER_BEARER_TOKEN')
