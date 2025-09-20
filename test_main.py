@@ -55,17 +55,16 @@ def rank_tickers(tickers: List[str]) -> pd.DataFrame:
     return df
 
 def send_to_telegram(df: pd.DataFrame, message: str) -> None:
-    """Send ranked table as formatted Markdown to Telegram."""
-    # Custom Markdown table for better alignment
-    table_lines = ["| Ticker | Premarket % | Sentiment | History Score | Composite |"]
-    table_lines.append("|--------|-------------|-----------|---------------|-----------|")
+    """Send ranked data as formatted text to Telegram."""
+    # Build a clean, space-separated alert
+    header = "*Ticker    Premarket %    Sentiment    History Score    Composite*"
+    lines = [header]
     for _, row in df.iterrows():
-        table_lines.append(
-            f"| {row['Ticker']} | {row['Premarket %']:>10} | {row['Sentiment']:>9} | "
-            f"{row['History Score']:>12} | {row['Composite']:>9} |"
-        )
-    table_md = "\n".join(table_lines)
-    full_msg = f"*{message}*\n\n**Ranked Premarket Gainers**\n{table_md}"
+        line = f"{row['Ticker']:8}  {row['Premarket %']:12}  {row['Sentiment']:10}  " \
+               f"{row['History Score']:12}  {row['Composite']:10}"
+        lines.append(line)
+    table_text = "\n".join(lines)
+    full_msg = f"*{message}*\n\n{table_text}"
     url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
     payload = {'chat_id': TELEGRAM_CHAT_ID, 'text': full_msg, 'parse_mode': 'Markdown'}
     requests.post(url, json=payload)
