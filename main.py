@@ -8,17 +8,6 @@ import re
 import os
 from typing import List, Dict
 import time
-# In fetch_latest_post
-for attempt in range(3):  # Retry 3 times
-    try:
-        tweets = twitter_client.search_recent_tweets(query=query, max_results=1, tweet_fields=['created_at'])
-        return tweets.data[0].text
-    except tweepy.TooManyRequests:
-        time.sleep(60 * (attempt + 1))  # Wait 1, 2, 3 mins
-        continue
-    except Exception as e:
-        raise e
-raise ValueError("Rate limit exceeded after retries.")
 
 # Config (from env/GitHub secrets)
 TWITTER_BEARER = os.getenv('TWITTER_BEARER_TOKEN')
@@ -30,12 +19,22 @@ twitter_client = tweepy.Client(bearer_token=TWITTER_BEARER)
 analyzer = SentimentIntensityAnalyzer()
 
 def fetch_latest_post(username: str = 'AceOfWallSt') -> str:
-    """Fetch latest tweet from @AceOfWallSt containing 'Premarket Top % Gainers'."""
+    """Fetch latest tweet from @AceOfWallSt containing 'Premarket Top % Gainers' with retry logic."""
     query = f'from:{username} "Premarket Top % Gainers"'
-    tweets = twitter_client.search_recent_tweets(query=query, max_results=1, tweet_fields=['created_at'])
-    if not tweets.data:
-        raise ValueError("No premarket post found today.")
-    return tweets.data[0].text
+    for attempt in range(3):  # Retry 3 times
+        try:
+            tweets = twitter_client.search_recent_tweets(query=query, max_results=1, tweet_fields=['created_at'])
+            if not tweets.data:
+                raise ValueError("No premarket post found today.")
+            return tweets.data[0].text
+        except tweepy.TooManyRequests:
+            if attempt == 2:  # Last attempt
+                raise  # Re-raise to trigger error handling
+            time.sleep(60 * (attempt + 1))  # Wait 1, 2, 3 mins
+            continue
+        except Exception as e:
+            raise e
+    raise ValueError("Rate limit exceeded after retries.")
 
 def extract_tickers(text: str) -> List[str]:
     """Extract $TICKERs via regex."""
