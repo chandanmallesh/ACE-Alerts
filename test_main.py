@@ -55,8 +55,7 @@ def rank_tickers(tickers: List[str]) -> pd.DataFrame:
     return df
 
 def send_to_telegram(df: pd.DataFrame, message: str) -> None:
-    """Send ranked data as formatted text to Telegram."""
-    # Build a clean, space-separated alert with monospaced code block
+    """Send ranked data as formatted text to Telegram with debug."""
     header = "Ticker     Premarket %   Sentiment   History Score   Composite"
     lines = [header]
     lines.append("-" * len(header))  # Separator line
@@ -67,7 +66,11 @@ def send_to_telegram(df: pd.DataFrame, message: str) -> None:
     full_msg = f"**{message}**\n\n```\n{table_text}\n```"
     url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
     payload = {'chat_id': TELEGRAM_CHAT_ID, 'text': full_msg, 'parse_mode': 'MarkdownV2'}
-    requests.post(url, json=payload)
+    response = requests.post(url, json=payload)
+    print(f"Telegram API Status: {response.status_code}")
+    print(f"Response: {response.text}")  # Logs the JSON response
+    if response.status_code != 200:
+        raise Exception(f"Telegram error: {response.text}")
 
 if __name__ == "__main__":
     try:
