@@ -11,21 +11,19 @@ TEST_POST = "Premarket Top % Gainers: $AGMH +230%, $CJET +150%, $ATMV +68%, $ADA
 TELEGRAM_TOKEN = os.getenv('TELEGRAM_TOKEN')
 TELEGRAM_CHAT_ID = os.getenv('TELEGRAM_CHAT_ID')
 
-# Reuse functions from main.py (copy-paste or import if in same dir with adjustments)
+# Reuse functions from main.py (simplified for test)
 def extract_tickers(text: str) -> List[str]:
     """Extract $TICKERs via regex."""
     import re
     return re.findall(r'\$([A-Z]{1,5})', text.upper())
 
 def get_premarket_change(ticker: str) -> float:
-    """Get estimated premarket % change via yfinance (mocked for testing)."""
-    # Mock with test data instead of real API call
+    """Get estimated premarket % change via mock data."""
     test_changes = {'AGMH': 230.0, 'CJET': 150.0, 'ATMV': 68.0, 'ADAP': 19.0, 'YDKG': 4.0}
     return test_changes.get(ticker, 0.0)
 
 def get_sentiment_score(ticker: str) -> float:
     """Quick sentiment from mock data (score -1 to 1)."""
-    # Mock sentiment scores
     test_sentiments = {'AGMH': 0.85, 'CJET': 0.80, 'ATMV': 0.75, 'ADAP': 0.70, 'YDKG': 0.65}
     return test_sentiments.get(ticker, 0.0)
 
@@ -66,7 +64,6 @@ def send_to_telegram(df: pd.DataFrame, message: str) -> None:
 
 if __name__ == "__main__":
     try:
-        # Simulate fetching post
         post_text = TEST_POST
         tickers = extract_tickers(post_text)
         if not tickers:
