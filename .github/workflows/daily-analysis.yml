@@ -1,44 +1,36 @@
-name: Premarket Polling (15-min Test)
+name: Ace Alerts (15-min watch)
 
 on:
   schedule:
-    - cron: '0/15 11-13 * * 1-5'  # Every 15 min, 7-10 AM ET (UTC 11-13)
-  workflow_dispatch:  # Manual trigger
+    - cron: "*/15 * * * 1-5"   # every 15 minutes on weekdays
+  workflow_dispatch:
+
+concurrency:
+  group: ace-alerts-15m
+  cancel-in-progress: true
 
 jobs:
-  poll:
+  run:
     runs-on: ubuntu-latest
+    env:
+      TWITTER_BEARER_TOKEN: ${{ secrets.TWITTER_BEARER_TOKEN }}
+      TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
+      TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+      RATE_LIMIT_MAX_SLEEP: "600"
+      RATE_LIMIT_DEFAULT_SLEEP: "90"
+      WINDOW_START: "07:00"
+      WINDOW_END: "12:00"
     steps:
       - uses: actions/checkout@v4
-      - name: Set up Python
-        uses: actions/setup-python@v5
+      - uses: actions/setup-python@v5
         with:
-          python-version: '3.12'
-      - name: Install dependencies
+          python-version: "3.12"
+      - name: Install deps
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
-      - name: Run polling analysis
-        env:
-          TWITTER_BEARER_TOKEN: ${{ secrets.TWITTER_BEARER_TOKEN }}
-          TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
-          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
-        run: |
-          # Fetch latest post ID from previous run (or default to 0)
-          LAST_POST_ID_FILE="last_post_id.txt"
-          if [ -f "$LAST_POST_ID_FILE" ]; then
-            LAST_POST_ID=$(cat "$LAST_POST_ID_FILE")
-          else
-            LAST_POST_ID=0
-          fi
-          # Run script with last ID as arg
-          python main.py "$LAST_POST_ID"
-          # Save new post ID if updated
-          if [ -f new_post_id.txt ]; then
-            mv new_post_id.txt "$LAST_POST_ID_FILE"
-          fi
-      - name: Upload last post ID artifact (for persistence)
-        uses: actions/upload-artifact@v4
-        with:
-          name: last-post-id
-          path: last_post_id.txt
+          pip install pytest
+      - name: Unit tests
+        run: python -m pytest -q || true
+      - name: Run watch loop (120 min, 15-min interval)
+        run: python main.py --watch-minutes 120 --interval-sec 900 --quick-first --window-start 07:00 --window-end 12:00
